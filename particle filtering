@@ -1,0 +1,2 @@
+1). 对particle filtering的理解：
+      particle filering算法，包括生成-预测-更新-重采样，其中update最为重要，利用实际观测值对预测值进行修改，而后不断迭代，淘汰生成的
