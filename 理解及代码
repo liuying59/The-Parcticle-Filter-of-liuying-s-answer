@@ -7,11 +7,11 @@
 # -*- coding: utf-8 -*-
 ···import numpy as np···
 
-
+```
 import scipy as scipy
 from numpy.random import uniform
 import scipy.stats
-
+```
 np.set_printoptions(threshold=3)
 np.set_printoptions(suppress=True)
 import cv2
