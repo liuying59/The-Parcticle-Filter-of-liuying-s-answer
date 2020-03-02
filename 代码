@@ -1,17 +1,9 @@
-'''1.对particle filtering的理解：
-      particle filering算法在机器人定位中应用，其主要包括生成-预测-更新-重采样几个步骤，
-      其中update最为重要，利用实际观测值对预测时的权值进行修改，而后不断淘汰权值小的粒子，
-      从而获得的大量权值大的粒子，求出这些粒子坐标平均值即为所需定位的点。'''
-
-
 # -*- coding: utf-8 -*-
-···import numpy as np···
-
-```
+import numpy as np
 import scipy as scipy
 from numpy.random import uniform
 import scipy.stats
-```
+
 np.set_printoptions(threshold=3)
 np.set_printoptions(suppress=True)
 import cv2
@@ -29,6 +21,7 @@ def drawCross(img, center, r, g, b):
     cv2.line(img, (ctrx - d, ctry - d), (ctrx + d, ctry + d), color, t, LINE_AA)
     cv2.line(img, (ctrx + d, ctry - d), (ctrx - d, ctry + d), color, t, LINE_AA)
  
+    
 def mouseCallback(event, x, y, flags,null):
     global center
     global trajectory#鼠标路径
@@ -54,22 +47,22 @@ def mouseCallback(event, x, y, flags,null):
         u=np.array([heading,distance])
         
         predict(particles, u, std, dt=1.)
-        zs = (np.linalg.norm(landmarks - center, axis=1) + (np.random.randn(NL) * sensor_std_err))
         
+####################################*******************************#####################################
+        zs = (np.linalg.norm((landmarks - center), axis=1) + (np.random.randn(NL) * sensor_std_err))
+        #修改sensor_std_err，以改变随机误差的大小
+####################################*******************************######################################
         
         update(particles, weights, z=zs, R=50, landmarks=landmarks)
-        
         indexes = systematic_resample(weights)
         resample_from_index(particles, weights, indexes)
         
-        
+####################################*******************************##################################        
         mean,var = estimate(particles, weights)
-        print(mean)
-       
-        #cv2.circle(img,tuple((int(mean[0]),int(mean[1]))),20,(255,0,0),-1)
+        #通过estimate函数，通过particles计算出平均坐标，即robot的定位
+####################################*******************************#################################          
         
- 
-    
+        
     previous_x=x
     previous_y=y
     
@@ -78,10 +71,11 @@ WIDTH=800
 HEIGHT=600
 WINDOW_NAME="Particle Filter"
  
+
 #sensorMu=0
 #sensorSigma=3
- 
-sensor_std_err=5
+
+sensor_std_err=50
  
 def create_uniform_particles(x_range, y_range, N):#N个粒子的生成函数
     particles = np.empty((N, 2))
@@ -89,7 +83,6 @@ def create_uniform_particles(x_range, y_range, N):#N个粒子的生成函数
     particles[:, 1] = uniform(y_range[0], y_range[1], size=N) #均匀生成N个粒子的纵坐标
     return particles   
     
- 
 def predict(particles, u, std, dt=1.):
     N = len(particles)
     dist = (u[1] * dt) + (np.random.randn(N) * std[1])#控制系统具有噪声
@@ -102,10 +95,15 @@ def update(particles, weights, z, R, landmarks):
        
         distance=np.power((particles[:,0] - landmark[0])**2 +(particles[:,1] - landmark[1])**2,0.5)
         weights *= scipy.stats.norm(distance, R).pdf(z[i])
+        
+###########################***********************************###############################
         #weights *= scipy.stats.pareto(distance, R).pdf(z[i])
-         
+        #用pareto函数替换norm函数，以改变weights的分布
+##########################***********************************################################
+        
     weights += 1.e-300 # avoid round-off to zero
     weights /= sum(weights)
+    
     
     
 def neff(weights):
@@ -127,10 +125,8 @@ def systematic_resample(weights):
     return indexes
     
 
-
 def estimate(particles, weights):
     pos = particles[:, 0:2]
-    
     mean = np.average(pos, weights=weights, axis=0)
     var = np.average((pos - mean)**2, weights=weights, axis=0)
     return mean, var
@@ -152,6 +148,7 @@ N=400
 landmarks=np.array([ [144,73], [410,13], [336,175], [718,159], [178,484], [665,464]  ])
 NL = len(landmarks)
 
+
 particles=create_uniform_particles(x_range, y_range, N)#生成粒子
 weights = np.array([1.0]*N)
 
@@ -163,7 +160,6 @@ mean= np.array([-10,-10])
 img = np.zeros((HEIGHT,WIDTH,3), np.uint8) #创建一个三维数组
 cv2.namedWindow(WINDOW_NAME)#创建一个窗口
 cv2.setMouseCallback(WINDOW_NAME,mouseCallback)
-
 
 center=np.array([[-10,-10]])
 
@@ -180,7 +176,7 @@ while(1):
     img = np.zeros((HEIGHT,WIDTH,3), np.uint8)
     
     drawLines(img, trajectory,   0,   255, 0)
-    #drawCross(img, center, r=255, g=0, b=0)
+    drawCross(img, center, r=255, g=0, b=0)
      
     #landmarks
     for landmark in landmarks:
@@ -190,8 +186,11 @@ while(1):
     for particle in particles:
         cv2.circle(img,tuple((int(particle[0]),int(particle[1]))),1,(255,255,255),-1)
 
-    #cv2.circle(img,tuple(int(mean)),10,(255,0,0),-1)
+####################################*******************************#######################
     cv2.circle(img,tuple((int(mean[0]),int(mean[1]))),5,(255,0,255),-1)
+    #在图像上输出，通过粒子滤波产生的robot定位
+####################################*******************************#######################
+    
     
     if cv2.waitKey(DELAY_MSEC) & 0xFF == 27:
         break
@@ -204,12 +203,4 @@ while(1):
     drawLines(img, np.array([[10,55],[25,55]]), 0, 255, 0)
     
 cv2.destroyAllWindows()
-
-
-
-
-
-
-
-
 
